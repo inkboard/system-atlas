@@ -1,0 +1,23 @@
+{
+  "skill_name": "system-atlas",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're redesigning how our app ingests calendar events from several providers and feeds, normalizes them, and serves them to the planner and a hardware display. I want to talk this through with you visually before we touch code — can you make me an atlas of the current pipeline (the calendar packages, the provider adapters, the device API route) with the open questions we'd need to settle for the redesign?",
+      "expected_output": "docs/calendar-pipeline/atlas/{data.mjs,template.html,build.mjs}, built atlas.html + SYSTEM.md, README.md, published artifact; chapters reveal progressively; every structure labelled with a role shape; questions with Q-IDs; a short chat summary with the artifact link and the 3-5 questions only the user can answer.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "ok so we have this atlas already at docs/our-agent/atlas/data.mjs — two things changed: we dropped the nightly reflect job in favour of extraction-per-turn, and we picked Langfuse instead of Phoenix after all. Update it, and tell me what that changes downstream. Don't leave anything stale.",
+      "expected_output": "data.mjs edited (R structure + K hooks + o11y resolution + decisions + chapter 6 story/flow), rebuilt, republished at the same URL, a grep for stale words done, downstream consequences listed (cost model, cadence question, who writes the handoff note now).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "i'm starting a greenfield side project: a small Telegram bot that watches a few RSS feeds, summarizes new posts with an LLM, and DMs me a digest every morning, with a /mute command. before i build, i want a map of it i can click around and poke holes in — i want it to look like those isometric codebase diagrams people post",
+      "expected_output": "A small atlas (6-9 structures, 4-6 chapters) in docs/<name>/, published; the chat message explains the chapters and asks the 2-3 real questions (digest timing/timezone, dedupe window, LLM model/cost) rather than a generic question list.",
+      "files": []
+    }
+  ]
+}
