@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
-export const assetsDir = join(here, '..', 'assets')
+export const assetsDir = join(here, '..', 'skills', 'system-atlas', 'assets')
 export const templatePath = join(assetsDir, 'template.html')
 export const template = await Bun.file(templatePath).text()
 

@@ -14,4 +14,4 @@ jobs:
         with:
           bun-version: latest
       # No dependencies: the suite is plain node:test against the skill's own assets.
-      - run: bun test skills/system-atlas/tests/
+      - run: bun test ./tests/
