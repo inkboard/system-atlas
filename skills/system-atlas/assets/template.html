@@ -110,6 +110,10 @@ details > *:not(summary){margin-top:8px}
 .q li.res>span,.q li.to>span{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--rule)}
 .q li.to>span{text-decoration:none}
 .q .ans{margin-top:2px;padding-left:10px;border-left:1.5px solid var(--ink)}
+.pkt>.lbl{visibility:hidden}
+.pkt:hover>.lbl,.pkt.lbl-on>.lbl{visibility:visible}
+.node>.hl{visibility:hidden}
+.node:hover>.hl,.node.sel>.hl,.node.hov>.hl{visibility:visible}
 @keyframes halo{0%{opacity:.9}50%{opacity:.25}100%{opacity:.9}}
 .halo{animation:halo 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion: reduce){.halo{animation:none}}
@@ -173,7 +177,7 @@ const qOpen=n=>(n.cond||[]).map(question).filter(c=>!c.r&&!c.to).length; const q
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 /* ---------------- STATE ---------------- */
-const S = { ch:0, view:'world', inside:null, selected:null, hover:null, tab:'what', playing:true, tx:0, ty:0, k:1, packets:[], selPacket:null, hoverPacket:null, flowSel:(typeof FLOWS!=='undefined'&&FLOWS[0]?FLOWS[0].id:'turn'), maxCh:0 };
+const S = { ch:0, view:'world', inside:null, selected:null, hover:null, tab:'what', playing:true, tx:0, ty:0, k:1, packets:[], selPacket:null, flowSel:(typeof FLOWS!=='undefined'&&FLOWS[0]?FLOWS[0].id:'turn'), maxCh:0 };
 const svg=document.getElementById('svg'), world=document.getElementById('world'), tip=document.getElementById('tip'), body=document.getElementById('body');
 let sceneNodes=[], sceneHops=[];
 const revealedIds=()=>{ if(S.ch>=CH.length-1) return NODES.map(n=>n.id); const s=new Set(); for(let i=0;i<=S.ch;i++) CH[i].reveal.forEach(id=>s.add(id)); return [...s]; };
@@ -231,8 +235,8 @@ function drawLabel(n){
   return g;
 }
 function drawNode(n){
-  const g=el('g',{class:'node',style:'cursor:pointer','data-id':n.id});
   const {gx,gy,w,d,h}=n; const sel=S.selected===n.id, hov=S.hover===n.id, fresh=!n.inside&&isNew(n.id);
+  const g=el('g',{class:'node'+(sel?' sel':'')+(hov?' hov':''),style:'cursor:pointer','data-id':n.id});
   const sw=sel?2:1.2, dash=n.ghost?'4 3':null, face=n.ghost?'none':'var(--face)';
   const face3=(p,fill,hatch,extra={})=>{const poly=el('polygon',{points:pts(p),fill:fill,stroke:'var(--ink)','stroke-width':sw,'stroke-linejoin':'round',...extra});if(dash)poly.setAttribute('stroke-dasharray',dash);g.appendChild(poly);if(hatch&&!n.ghost){g.appendChild(el('polygon',{points:pts(p),fill:'url(#'+hatch+')',style:'color:var(--ink)',stroke:'none'}));}};
   const box=(z0,z1,hatchTop)=>{ face3([P(gx,gy+d,z0),P(gx+w,gy+d,z0),P(gx+w,gy+d,z1),P(gx,gy+d,z1)],face,'hatch'); face3([P(gx+w,gy,z0),P(gx+w,gy+d,z0),P(gx+w,gy+d,z1),P(gx+w,gy,z1)],face,'hatch'); face3([P(gx,gy,z1),P(gx+w,gy,z1),P(gx+w,gy+d,z1),P(gx,gy+d,z1)],face,hatchTop||null); };
@@ -247,16 +251,18 @@ function drawNode(n){
   else if(kind==='job'){ box(0,h,'hatchLight'); }
   else { box(0,h,null); }
   const top=[P(gx,gy,h),P(gx+w,gy,h),P(gx+w,gy+d,h),P(gx,gy+d,h)];
-  if(sel||hov){ g.appendChild(el('polygon',{points:pts(top),fill:sel?'var(--ink)':'none',opacity:sel?.12:1,stroke:'var(--ink)','stroke-width':sel?2.5:1.8})); }
+  g.appendChild(el('polygon',{class:'hl',points:pts(top),fill:sel?'var(--ink)':'none',opacity:sel?.12:1,stroke:'var(--ink)','stroke-width':sel?2.5:1.8}));
   if(fresh&&!sel){ g.appendChild(el('polygon',{class:'halo',points:pts([P(gx-.35,gy-.35,0),P(gx+w+.35,gy-.35,0),P(gx+w+.35,gy+d+.35,0),P(gx-.35,gy+d+.35,0)]),fill:'none',stroke:'var(--ink)','stroke-width':1.4,'stroke-dasharray':'4 3'})); }
   const c=P(gx+w/2,gy+d/2,h); const chipW=16;
   g.appendChild(el('rect',{x:c[0]-chipW/2,y:c[1]-8,width:chipW,height:14,fill:sel?'var(--hi-bg)':'var(--paper)',stroke:'var(--ink)','stroke-width':1}));
   const t=el('text',{x:c[0],y:c[1]+3,'text-anchor':'middle','font-size':'9','font-family':'var(--mono)',fill:sel?'var(--hi-fg)':'var(--ink)','font-weight':'600'}); t.textContent=n.code; g.appendChild(t);
-  g.addEventListener('mouseenter',e=>{S.hover=n.id;showTip(e,n);renderPanel();render();});
+  /* No render() on hover: it clears #world and detaches this very element, which
+     re-fires hover and kills the click. CSS :hover draws the highlight instead. */
+  g.addEventListener('mouseenter',e=>{S.hover=n.id;showTip(e,n);renderPanel();});
   g.addEventListener('mousemove',e=>moveTip(e));
-  g.addEventListener('mouseleave',()=>{S.hover=null;hideTip();renderPanel();render();});
-  g.addEventListener('click',e=>{e.stopPropagation();select(n.id);});
-  g.addEventListener('dblclick',e=>{e.stopPropagation();if(!n.inside)goInside(n.id);});
+  g.addEventListener('mouseleave',()=>{S.hover=null;hideTip();renderPanel();});
+  /* No click/dblclick here: hovering rebuilds the scene, so this element is gone
+     before the browser can pair press with release. Hit-testing lives on the svg. */
   return g;
 }
 
@@ -266,13 +272,11 @@ function hopsOf(flow){ return sceneHops.filter(h=>h.flow===flow); }
 function drawPackets(){
   const pg=world.querySelector('#pkts'); if(!pg)return; pg.innerHTML='';
   S.packets.forEach((p,i)=>{ const hs=hopsOf(p.flow); const h=hs[p.hop]; if(!h||!h.path)return; const [x,y]=pointAt(h.path,p.t);
-    const isSel=S.selPacket===i; const g=el('g',{class:'pkt',style:'cursor:pointer'});
+    const isSel=S.selPacket===i; const g=el('g',{class:'pkt'+(isSel||S.ch<CH.length-1?' lbl-on':''),style:'cursor:pointer','data-i':i});
     if(isSel) g.appendChild(el('circle',{cx:x,cy:y,r:11,fill:'none',stroke:'var(--ink)','stroke-width':1.2,'stroke-dasharray':'2 2'}));
     g.appendChild(el('circle',{cx:x,cy:y,r:5.5,fill:'var(--ink)',stroke:'var(--paper)','stroke-width':1.6}));
-    if(isSel||S.hoverPacket===i||S.ch<CH.length-1){ const lbl=el('text',{x:x+10,y:y-8,'font-size':'10','font-family':'var(--mono)',fill:'var(--ink)','font-weight':'500'}); lbl.textContent=h.label; g.appendChild(el('rect',{x:x+7,y:y-19,width:h.label.length*6.4+6,height:14,fill:'var(--paper)',stroke:'var(--ink)','stroke-width':.8})); g.appendChild(lbl); }
-    g.addEventListener('click',e=>{e.stopPropagation();S.selPacket=i;S.playing=false;syncFlowBtn();renderPanel();drawPackets();});
-    g.addEventListener('mouseenter',()=>{S.hoverPacket=i;drawPackets();});
-    g.addEventListener('mouseleave',()=>{S.hoverPacket=null;drawPackets();});
+    const lg=el('g',{class:'lbl'}); const lbl=el('text',{x:x+10,y:y-8,'font-size':'10','font-family':'var(--mono)',fill:'var(--ink)','font-weight':'500'}); lbl.textContent=h.label;
+    lg.appendChild(el('rect',{x:x+7,y:y-19,width:h.label.length*6.4+6,height:14,fill:'var(--paper)',stroke:'var(--ink)','stroke-width':.8})); lg.appendChild(lbl); g.appendChild(lg);
     pg.appendChild(g);
   });
 }
@@ -373,9 +377,30 @@ function fitView(anim){ const r=svg.getBoundingClientRect(); if(!sceneNodes.leng
 function focusNode(n){ const r=svg.getBoundingClientRect(); const c=P(n.gx+n.w/2,n.gy+n.d/2,n.h/2); setView(r.width/2-c[0]*S.k, r.height/2-c[1]*S.k, S.k, true); }
 function zoomAt(f,cx,cy){ tween=null; const nk=Math.max(.35,Math.min(3,S.k*f)); S.tx=cx-(cx-S.tx)*(nk/S.k); S.ty=cy-(cy-S.ty)*(nk/S.k); S.k=nk; applyView(); }
 svg.addEventListener('wheel',e=>{e.preventDefault(); const r=svg.getBoundingClientRect(); zoomAt(e.deltaY<0?1.1:0.9,e.clientX-r.left,e.clientY-r.top);},{passive:false});
-let drag=null; svg.addEventListener('pointerdown',e=>{ if(e.button!==0)return; tween=null; drag={x:e.clientX,y:e.clientY,tx:S.tx,ty:S.ty,moved:false}; svg.setPointerCapture(e.pointerId); });
-svg.addEventListener('pointermove',e=>{ if(!drag)return; const dx=e.clientX-drag.x,dy=e.clientY-drag.y; if(Math.hypot(dx,dy)>3){drag.moved=true;svg.classList.add('dragging');} S.tx=drag.tx+dx; S.ty=drag.ty+dy; applyView(); });
-svg.addEventListener('pointerup',e=>{ if(drag&&!drag.moved){ select(null); } drag=null; svg.classList.remove('dragging'); });
+/* Selection runs on pointerdown rather than click. render() and drawPackets() each
+   clear their layer, and both run on hover, so the box or dot under the cursor is
+   replaced between press and release — the browser then never synthesises a click on
+   it and click-to-pin silently did nothing. Pointer capture is deferred until a drag
+   actually starts for the same reason: capturing on pointerdown retargets the click
+   to the svg, away from the node. */
+function selectPacket(i){ S.selPacket=i; S.playing=false; syncFlowBtn(); renderPanel(); drawPackets(); }
+let drag=null, lastTap={id:null,t:0};
+svg.addEventListener('pointerdown',e=>{ if(e.button!==0)return; tween=null;
+  const hit=e.target.closest?e.target.closest('g.node,g.pkt'):null, isPkt=hit&&hit.classList.contains('pkt');
+  drag={x:e.clientX,y:e.clientY,tx:S.tx,ty:S.ty,moved:false,pid:e.pointerId,
+    pkt:isPkt?+hit.dataset.i:null, id:hit&&!isPkt?hit.dataset.id:null}; });
+svg.addEventListener('pointermove',e=>{ if(!drag)return; const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.moved){ if(Math.hypot(dx,dy)<=3)return; drag.moved=true; svg.classList.add('dragging'); try{svg.setPointerCapture(drag.pid);}catch(_){} }
+  S.tx=drag.tx+dx; S.ty=drag.ty+dy; applyView(); });
+svg.addEventListener('pointercancel',()=>{ drag=null; svg.classList.remove('dragging'); });
+svg.addEventListener('pointerup',()=>{ const d=drag; drag=null; svg.classList.remove('dragging');
+  if(!d||d.moved)return;                                  // a pan, not a tap — leave selection alone
+  if(d.pkt!=null){ selectPacket(d.pkt); return; }
+  if(d.id==null){ select(null); return; }                 // empty canvas clears the pin
+  const n=sceneNodes.find(x=>x.id===d.id), now=performance.now();
+  if(lastTap.id===d.id&&now-lastTap.t<400){ lastTap={id:null,t:0}; if(n&&!n.inside&&n.steps){ goInside(d.id); return; } }
+  else lastTap={id:d.id,t:now};
+  select(d.id); });
 document.getElementById('zin').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2);};
 document.getElementById('zout').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2);};
 window.addEventListener('resize',()=>fitView(false));
