@@ -168,7 +168,8 @@ const byId = Object.fromEntries(NODES.map(n=>[n.id,n]));
 const center = n => [n.gx+n.w/2, n.gy+n.d/2];
 const NS='http://www.w3.org/2000/svg';
 const el=(t,a={},...kids)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);kids.forEach(k=>e.appendChild(k));return e;};
-const qOpen=n=>(n.cond||[]).filter(c=>!c.r&&!c.to).length; const qHtml=list=>`<ul class="q">${list.map(c=>c.r?`<li class="res"><span>${c.q}</span><div class="ans">✓ ${c.r}</div></li>`:c.to?`<li class="to"><span>${c.q}</span><div class="ans">→ ${c.to}</div></li>`:`<li>${c.q}</li>`).join('')}</ul>`;
+const question=c=>typeof c==='string'?{q:c}:c;
+const qOpen=n=>(n.cond||[]).map(question).filter(c=>!c.r&&!c.to).length; const qHtml=list=>`<ul class="q">${list.map(question).map(c=>c.r?`<li class="res"><span>${c.q}</span><div class="ans">✓ ${c.r}</div></li>`:c.to?`<li class="to"><span>${c.q}</span><div class="ans">→ ${c.to}</div></li>`:`<li>${c.q}</li>`).join('')}</ul>`;
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 /* ---------------- STATE ---------------- */
@@ -186,7 +187,7 @@ function buildWorldScene(){
   if(c.flow){ c.flow.forEach((h,i)=>{ let bend=bendFor(h[0],h[1]); const rev=c.flow.findIndex(x=>x[0]===h[1]&&x[1]===h[0]); if(rev>-1&&rev<i) bend=bend==='xy'?'yx':'xy'; sceneHops.push({flow:'ch',idx:i,from:h[0],to:h[1],label:h[2],payload:h[3],bend}); }); }
   else { FLOWS.forEach(f=>{ if(S.flowSel!=='both'&&f.id!==S.flowSel)return; f.hops.forEach((h,i)=>sceneHops.push({flow:f.id,idx:i,from:h[0],to:h[1],label:h[2],payload:h[3],bend:h[4]||'xy'})); }); }
 }
-function bendFor(a,b){ const t=FLOWS[0].hops.find(h=>h[0]===a&&h[1]===b)||FLOWS[1].hops.find(h=>h[0]===a&&h[1]===b); return t?(t[4]||'xy'):'yx'; }
+function bendFor(a,b){ const t=FLOWS.flatMap(f=>f.hops||[]).find(h=>h[0]===a&&h[1]===b); return t?(t[4]||'xy'):'yx'; }
 function buildInsideScene(n){
   const steps=n.steps||[]; sceneNodes=steps.map((s,i)=>({id:'s'+i,code:String(i+1),name:s[0],short:s[0],desc:s[1],gx:2+i*3.4,gy:2+i*0.6,w:2,d:2,h:34,inside:true}));
   sceneHops=[]; for(let i=0;i<steps.length-1;i++) sceneHops.push({flow:'inside',idx:i,from:'s'+i,to:'s'+(i+1),label:steps[i][0]+' → '+steps[i+1][0],payload:{step:i+1,handsOff:steps[i+1][0]},bend:'xy'});
