@@ -1,0 +1,11 @@
+{
+  "name": "system-atlas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An agent skill for explorable isometric architecture maps.",
+  "license": "MIT",
+  "scripts": {
+    "test": "bun test skills/system-atlas/tests/"
+  }
+}
