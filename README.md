@@ -49,7 +49,7 @@ Then the agent works in this order:
 
 ```
 <atlas home>/data.mjs          ← the only file you edit
-<atlas home>/build.mjs         ← node build.mjs
+<atlas home>/build.mjs         ← bun build.mjs
 <atlas home>/template.html     ← the renderer
         ↓
    atlas.html   +   SYSTEM.md  ← both generated, never hand-edited

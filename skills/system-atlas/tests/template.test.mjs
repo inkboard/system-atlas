@@ -1,56 +1,53 @@
-import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import test from 'node:test'
-import { fileURLToPath } from 'node:url'
+// Renderer behaviour: the question shapes and the chapter-hop bend lookup.
+import { expect, test } from 'bun:test'
 
 import { CH, FLOWS, NODES } from '../assets/data.example.mjs'
+import { extractFns } from './helpers.mjs'
 
-const here = dirname(fileURLToPath(import.meta.url))
-const template = readFileSync(join(here, '..', 'assets', 'template.html'), 'utf8')
-
-function extract(start, end) {
-  const from = template.indexOf(start)
-  const to = template.indexOf(end, from)
-  assert.notEqual(from, -1, `template must contain ${start}`)
-  assert.notEqual(to, -1, `template must contain ${end}`)
-  return template.slice(from, to)
-}
-
-function loadQuestionHelpers() {
-  const start = template.includes('const question=') ? 'const question=' : 'const qOpen='
-  const source = extract(start, 'const esc=')
-  return new Function('NODES', `${source}\nreturn { qOpen, qHtml }`)(NODES)
-}
-
-function loadBendFor() {
-  const source = extract('function bendFor', 'function buildInsideScene')
-  return new Function('FLOWS', `${source}\nreturn bendFor`)(FLOWS)
-}
-
-test('open string questions render their text', () => {
-  const { qOpen, qHtml } = loadQuestionHelpers()
-  const webChat = NODES.find((node) => node.id === 'U')
-
-  assert.equal(qOpen(webChat), 1)
-  const html = qHtml(webChat.cond)
-  assert.match(html, /Where does the page live\?/)
-  assert.doesNotMatch(html, /undefined/)
+test('all three documented question shapes render their text', () => {
+  const { qHtml, qOpen } = extractFns(['question', 'qOpen', 'qHtml'])
+  const cond = [
+    'a plain string is an open question',
+    { q: 'resolved?', r: 'yes (2026-01-01)' },
+    { q: 'routed?', to: 'Memory deep dive' },
+  ]
+  const html = qHtml(cond)
+  expect(html).toMatch(/a plain string is an open question/)
+  expect(html).toMatch(/resolved\?/)
+  expect(html).toMatch(/routed\?/)
+  expect(html, 'string questions must be normalised before reading .q').not.toMatch(/undefined/)
+  expect(qOpen({ cond }), 'only the plain string counts as open').toBe(1)
 })
 
-test('chapter-only hops work when the atlas defines one flow', () => {
-  const bendFor = loadBendFor()
-  const later = CH.find((chapter) => chapter.id === 'later')
-  const [from, to] = later.flow[0]
-
-  assert.equal(FLOWS.length, 1, 'fixture must keep the one-flow regression case')
-  assert.doesNotThrow(() => bendFor(from, to))
-  assert.equal(bendFor(from, to), 'yx')
+test('the bundled starter data renders no undefined questions', () => {
+  const { qHtml } = extractFns(['question', 'qOpen', 'qHtml'])
+  for (const n of NODES) {
+    if (!(n.cond || []).length) continue
+    expect(qHtml(n.cond), `structure ${n.code} renders an undefined question`).not.toMatch(/undefined/)
+  }
 })
 
-test('declared hop bends still take precedence', () => {
-  const bendFor = loadBendFor()
-  const [from, to, , , bend] = FLOWS[0].hops[0]
+test('every chapter flow resolves a bend without throwing', () => {
+  const { bendFor } = extractFns(['bendFor'], { FLOWS })
+  for (const c of CH) {
+    for (const h of c.flow || []) {
+      expect(() => bendFor(h[0], h[1]), `chapter "${c.id}": hop ${h[0]} -> ${h[1]}`).not.toThrow()
+    }
+  }
+})
 
-  assert.equal(bendFor(from, to), bend)
+test('chapter hops resolve when the atlas declares a single flow', () => {
+  // Regression: bendFor used to read FLOWS[1].hops unconditionally, so a chapter hop that
+  // was not in the first flow threw on any atlas with fewer than two flows.
+  const oneFlow = [{ id: 'only', name: 'Only', hops: [['A', 'B', 'x', {}, 'yx']] }]
+  const { bendFor } = extractFns(['bendFor'], { FLOWS: oneFlow })
+  expect(bendFor('A', 'B'), 'a declared bend still wins').toBe('yx')
+  expect(bendFor('X', 'Y'), 'an undeclared hop falls back instead of throwing').toBe('yx')
+})
+
+test('a declared hop bend takes precedence over the fallback', () => {
+  const { bendFor } = extractFns(['bendFor'], { FLOWS })
+  const [from, to, , , bend] = FLOWS[0].hops.find((h) => h[4]) || []
+  if (!from) return // starter data declares no explicit bends; nothing to assert
+  expect(bendFor(from, to)).toBe(bend)
 })

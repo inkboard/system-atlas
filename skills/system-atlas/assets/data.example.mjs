@@ -1,5 +1,5 @@
 // Single source of truth for one atlas. Copy to <atlas home>/data.mjs and edit.
-// Build: node <atlas home>/build.mjs  → writes ../SYSTEM.md and ../atlas.html
+// Build: bun <atlas home>/build.mjs  → writes ../SYSTEM.md and ../atlas.html
 // The atlas home is docs/<system>/atlas/ in repos that commit design docs, or a
 // git-ignored scratch directory in repos that only commit ADRs + CONTEXT.md.
 
@@ -7,7 +7,7 @@ export const META = {
   title: 'Example Agent',                 // "<title> Atlas" in the tab; "<title> — System Definition" in SYSTEM.md
   artifactUrl: '',                        // fill after first publish; keep it stable across rebuilds
   sourcePath: 'docs/example/atlas/data.mjs',
-  buildCmd: 'node docs/example/atlas/build.mjs',
+  buildCmd: 'bun docs/example/atlas/build.mjs',
   stats: [{ k: 'System', v: 'example · v0' }, { k: 'Model roles', v: '2' }], // static top-strip stats; chapter/shown/questions are added automatically
   intro: `_**This file is the living source of truth for the design.** The interactive atlas is built from the same data._`,
   onePara: `One paragraph a newcomer can read in 30 seconds: what the system is, what the loop is, what is not built yet.`,

@@ -40,7 +40,7 @@ Either way the rule is the same: one URL, republished after every data change, n
 
 ## What done looks like
 
-- `<atlas home>/data.mjs` exists and is the only edited source; `node <atlas home>/build.mjs` writes `SYSTEM.md` and `atlas.html` without error.
+- `<atlas home>/data.mjs` exists and is the only edited source; `bun <atlas home>/build.mjs` writes `SYSTEM.md` and `atlas.html` without error.
 - The atlas is published at a stable URL and republished there after every data change.
 - Every structure has `one`, `what`, `how`, a `short` label, a role `kind`, and its questions; ghosts are marked; chapters exist with per-chapter flows; the last chapter is the whole system.
 - `SYSTEM.md` carries the decisions table, the question index with IDs and states, and the "how this file is maintained" footer.
@@ -48,12 +48,13 @@ Either way the rule is the same: one URL, republished after every data change, n
 
 ## Verify before publishing
 
-Syntax-check the built script (`new Function(js)`), then look at it: serve the folder with a static server and open it in a real browser — `file://` renders as a static snapshot in some in-app browsers and the fonts may not load. Resize to ~1280×800 and screenshot a first chapter, a middle chapter, the last chapter, an inside view, and the light theme. Keep `<meta charset="utf-8">` at the top of the template or arrows render as mojibake. After every decision, grep the outputs for the stale words (`pending`, the old model name, the rejected design) — the person reads everything.
+Run `bun test` first — it builds the starter atlas end to end, checks the map and `SYSTEM.md` still agree on every question, and fences the interaction layer. Then syntax-check your own built script (`new Function(js)`) and look at it: serve the folder with a static server and open it in a real browser — `file://` renders as a static snapshot in some in-app browsers and the fonts may not load. Resize to ~1280×800 and screenshot a first chapter, a middle chapter, the last chapter, an inside view, and the light theme. Keep `<meta charset="utf-8">` at the top of the template or arrows render as mojibake. Click a structure and confirm the panel says **pinned** and offers *Go inside*, and click a packet dot: this renderer rebuilds its whole scene on every draw, so a stray `render()` in a hover handler detaches the element under the cursor and the browser stops synthesising clicks — the map still looks perfect in a screenshot while nothing responds to a click. After every decision, grep the outputs for the stale words (`pending`, the old model name, the rejected design) — the person reads everything.
 
 ## Files in this skill
 
 - `assets/template.html` — the atlas renderer (title and top-strip stats injected at build)
 - `assets/build.mjs` — `data.mjs` → `atlas.html` + `SYSTEM.md`
 - `assets/data.example.mjs` — a minimal starter with every field documented; copy to `data.mjs`
+- `tests/` — `bun test` at the repo root; guards the renderer against the starter data (not copied into an atlas home)
 - `references/design-language.md` — layout, palette, isometric grammar, shapes by role, labels, copy rules, the chapter recipe
 - `references/process-and-lessons.md` — the first session step by step, the README table, the subagent deep-dive pattern, cost-model habits, things that bit
