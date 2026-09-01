@@ -34,6 +34,7 @@ test('the starter data builds both views without error', async () => {
   const { stdout, systemMd, atlasHtml } = await buildStarterAtlas()
   expect(stdout).toMatch(/built SYSTEM\.md \+ atlas\.html/)
   expect(systemMd.length, 'SYSTEM.md is empty').toBeGreaterThan(0)
+  expect(atlasHtml, 'without a doctype the page renders in quirks mode').toMatch(/^<!doctype html>/i)
   expect(atlasHtml, 'charset meta must survive or arrows render as mojibake').toContain('<meta charset="utf-8">')
   expect(atlasHtml, 'the built map has no svg').toContain('<svg')
   expect(atlasHtml, 'title placeholder was not substituted').not.toContain('__TITLE__')
