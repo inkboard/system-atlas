@@ -6,6 +6,6 @@
   "description": "An agent skill for explorable isometric architecture maps.",
   "license": "MIT",
   "scripts": {
-    "test": "bun test skills/system-atlas/tests/"
+    "test": "bun test ./tests/"
   }
 }

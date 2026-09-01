@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { NODES } from '../assets/data.example.mjs'
+import { NODES } from '../skills/system-atlas/assets/data.example.mjs'
 import { assetsDir, extractFns } from './helpers.mjs'
 
 // Build the starter atlas in a scratch directory, exactly as the skill tells a user to.

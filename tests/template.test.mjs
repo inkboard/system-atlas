@@ -1,7 +1,7 @@
 // Renderer behaviour: the question shapes and the chapter-hop bend lookup.
 import { expect, test } from 'bun:test'
 
-import { CH, FLOWS, NODES } from '../assets/data.example.mjs'
+import { CH, FLOWS, NODES } from '../skills/system-atlas/assets/data.example.mjs'
 import { extractFns } from './helpers.mjs'
 
 test('all three documented question shapes render their text', () => {
