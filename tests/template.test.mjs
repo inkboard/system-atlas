@@ -51,3 +51,13 @@ test('a declared hop bend takes precedence over the fallback', () => {
   if (!from) return // starter data declares no explicit bends; nothing to assert
   expect(bendFor(from, to)).toBe(bend)
 })
+
+test('question ids run over the whole cond list, as the generator numbers them', () => {
+  const { qHtml } = extractFns(['question', 'qOpen', 'qHtml', 'esc'])
+  const html = qHtml(['open one', { q: 'resolved?', r: 'yes (2026-01-01)' }, { q: 'routed?', to: 'Memory deep dive' }], 'X')
+  expect(html).toMatch(/Q-X1<\/b> open one/)
+  expect(html).toMatch(/Q-X2<\/b> <span>resolved\?/)
+  // build.mjs indexes the full list, so a resolved entry must not shift the ids after it
+  expect(html, 'a resolved question shifted the following id').toMatch(/Q-X3<\/b> <span>routed\?/)
+  expect(qHtml(['no code given'])).not.toMatch(/qid/)
+})
