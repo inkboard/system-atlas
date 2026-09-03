@@ -111,6 +111,7 @@ details > *:not(summary){margin-top:8px}
 .q li.res>span,.q li.to>span{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--rule)}
 .q li.to>span{text-decoration:none}
 .q .ans{margin-top:2px;padding-left:10px;border-left:1.5px solid var(--ink)}
+.q .qid{font-size:10px;letter-spacing:.08em;color:var(--ink-2);margin-right:5px;text-decoration:none}
 .pkt>.lbl{visibility:hidden}
 .pkt:hover>.lbl,.pkt.lbl-on>.lbl{visibility:visible}
 .node>.hl{visibility:hidden}
@@ -174,7 +175,7 @@ const center = n => [n.gx+n.w/2, n.gy+n.d/2];
 const NS='http://www.w3.org/2000/svg';
 const el=(t,a={},...kids)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);kids.forEach(k=>e.appendChild(k));return e;};
 const question=c=>typeof c==='string'?{q:c}:c;
-const qOpen=n=>(n.cond||[]).map(question).filter(c=>!c.r&&!c.to).length; const qHtml=list=>`<ul class="q">${list.map(question).map(c=>c.r?`<li class="res"><span>${c.q}</span><div class="ans">✓ ${c.r}</div></li>`:c.to?`<li class="to"><span>${c.q}</span><div class="ans">→ ${c.to}</div></li>`:`<li>${c.q}</li>`).join('')}</ul>`;
+const qOpen=n=>(n.cond||[]).map(question).filter(c=>!c.r&&!c.to).length; const qHtml=(list,code)=>`<ul class="q">${list.map(question).map((c,i)=>{const id=code?`<b class="qid">Q-${esc(code)}${i+1}</b> `:'';return c.r?`<li class="res">${id}<span>${c.q}</span><div class="ans">✓ ${c.r}</div></li>`:c.to?`<li class="to">${id}<span>${c.q}</span><div class="ans">→ ${c.to}</div></li>`:`<li>${id}${c.q}</li>`;}).join('')}</ul>`;
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 /* ---------------- STATE ---------------- */
@@ -309,14 +310,14 @@ function renderPanel(){
   let content='';
   if(S.tab==='what') content=`<p class="lede">${n.one}</p><details${pinned?' open':''}><summary>Read more</summary><p>${n.what}</p></details>${n.steps?`<details><summary>Steps in execution</summary>${n.steps.map((s,j)=>`<div class="step"><div class="no">${j+1}</div><div class="tx"><b>${esc(s[0])}</b> — ${esc(s[1])}</div></div>`).join('')}</details>`:''}`;
   else if(S.tab==='how') content=`<p class="lede">${n.one}</p><p>${n.how}</p>`;
-  else content=`<p class="lede">${n.one}</p>`+(n.cond&&n.cond.length?qHtml(n.cond):`<p>Nothing open here right now.</p>`);
+  else content=`<p class="lede">${n.one}</p>`+(n.cond&&n.cond.length?qHtml(n.cond,n.code):`<p>Nothing open here right now.</p>`);
   body.innerHTML=`<div class="eyebrow">${esc(n.code)} · ${pinned?'pinned':'hovering'}${isNew(n.id)?' · new in this chapter':''}</div><h1 class="t">${esc(n.name)}</h1><div class="sub">${status}</div>${content}
   ${pinned?`<div class="actions">${n.steps?`<button class="ctl" onclick="goInside('${n.id}')">→ Go inside</button>`:''}<button class="ctl" onclick="select(null)">Back to chapter</button></div>`:''}`;
 }
 function renderChapterPanel(){
   const c=CH[S.ch]; const last=S.ch===CH.length-1;
   if(S.tab==='how'){ body.innerHTML=HOW_HTML; return; }
-  if(S.tab==='cond'){ body.innerHTML=`<div class="eyebrow">${esc(TITLE)}</div><h1 class="t">Open questions</h1><div class="sub">${last?'everything unresolved, by structure':'for the structures revealed so far'}</div>`+NODES.filter(n=>revealedIds().includes(n.id)&&n.cond&&n.cond.length).map(n=>`<h3 class="sec">${n.code} · ${esc(n.name)}${n.ghost?' <span class="chip ghost static">later</span>':''}</h3>${qHtml(n.cond)}`).join(''); return; }
+  if(S.tab==='cond'){ body.innerHTML=`<div class="eyebrow">${esc(TITLE)}</div><h1 class="t">Open questions</h1><div class="sub">${last?'everything unresolved, by structure':'for the structures revealed so far'}</div>`+NODES.filter(n=>revealedIds().includes(n.id)&&n.cond&&n.cond.length).map(n=>`<h3 class="sec">${n.code} · ${esc(n.name)}${n.ghost?' <span class="chip ghost static">later</span>':''}</h3>${qHtml(n.cond,n.code)}`).join(''); return; }
   const chips = last ? '' : `<h3 class="sec">New in this chapter</h3><div>${c.reveal.map(nodeChip).join('')}</div>`;
   const nav=`<div class="actions"><button class="ctl" onclick="prevCh()" ${S.ch===0?'disabled':''}>◂ Back</button><button class="ctl primary" onclick="nextCh()" ${last?'disabled':''}>${S.ch===CH.length-2?'Show the whole system ▸':'Next ▸'}</button></div>`;
   body.innerHTML=`<div class="eyebrow">Chapter ${S.ch+1} of ${CH.length}</div><h1 class="t">${esc(c.title)}</h1><p class="lede">${c.lede}</p>${c.story}${chips}${nav}
